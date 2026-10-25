@@ -1,6 +1,6 @@
 # Fetch Data with AWS Lambda — Cheat Sheet
 
-Lesson notes for reviewing later. The project write-up is in [README.md](README.md).
+Lesson notes for reviewing later. The project write-up is in [README.md](README.md), and the Lambda function code is in [project-files/index.mjs](project-files/index.mjs).
 
 ## Contents
 
@@ -105,12 +105,24 @@ This is the **data tier** of a three-tier architecture. The CloudFront project b
 
 ## The code and the AWS SDK
 
-The function code does two things:
+The function code ([project-files/index.mjs](project-files/index.mjs)) does two things:
 
 | Part | What it does |
 |---|---|
 | **First half** | Uses the **AWS SDK for JavaScript** to take a `userId` and get the matching item from the `UserData` table |
 | **Second half** (from `try {`) | Handles errors from the database call and returns a tailored error message saying what went wrong |
+
+Line by line:
+
+| Code | Does |
+|---|---|
+| `new DynamoDBClient({ region: 'ap-southeast-1' })` | Connects to DynamoDB in the table's Region. It must match, or the table won't be found |
+| `DynamoDBDocumentClient.from(...)` | Wraps the client so you can use **plain JSON** instead of DynamoDB JSON |
+| `String(event.userId)` | Reads `userId` from the test event and makes it a string to match the key's type |
+| `GetCommand({ TableName, Key })` | The **GetItem** request: fetch one item by its partition key |
+| `ddb.send(command)` | Sends the request. This is the call that hit **AccessDenied** at first |
+| `return Item` / `return null` | Returns the user, or `null` if no item has that `userId` |
+| `catch (err) { return err; }` | Returns the error **instead of throwing it**, which is why the console showed "Succeeded" |
 
 - The **AWS SDK** is a library of pre-written code for using AWS services, such as creating an S3 bucket or launching an EC2 instance, without writing it all yourself.
 - There's a different SDK for each language. This code uses the **JavaScript** one to talk to DynamoDB.
